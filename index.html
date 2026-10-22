@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>수급 분석</title>
+<meta name="theme-color" content="#1f3a8a"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1c2430;--mut:#667085;--line:#e3e7ee;--acc:#1f3a8a;--up:#d92d20;--dn:#175cd3;--ok:#067647;--hl:#fff8d6;--hl2:#ffe9e7}
+@media(prefers-color-scheme:dark){:root{--bg:#10141b;--card:#171c26;--ink:#e6eaf2;--mut:#9aa4b5;--line:#2a3140;--acc:#8fb0ff;--up:#ff6b5e;--dn:#6aa3ff;--ok:#5bd69a;--hl:#3a3414;--hl2:#3b1f1c}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+header{padding:16px 20px;border-bottom:1px solid var(--line);background:var(--card)}
+h1{margin:0;font-size:18px}.sub{color:var(--mut);font-size:12px;margin-top:2px}
+.wrap{padding:14px 20px;max-width:1600px;margin:auto}
+.filters{display:flex;flex-wrap:wrap;gap:10px 16px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:12px;align-items:center;transition:opacity .15s}
+.filters.off{opacity:.4}.filters.off .fin{pointer-events:none}
+.filters label{font-size:12px;color:var(--mut);display:flex;gap:6px;align-items:center}
+input,select,textarea{padding:4px 7px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink);font:inherit;font-size:13px}
+.filters input{width:74px}
+#fnote{font-size:12px;color:var(--mut)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.tab{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:6px 12px;border-radius:18px;cursor:pointer;font-size:13px}
+.tab.on{background:var(--acc);color:#fff;border-color:var(--acc)}.tab small{opacity:.75;margin-left:4px}
+#bub{position:fixed;z-index:50;max-width:340px;background:#1c2430;color:#fff;padding:9px 12px;border-radius:9px;font-size:12.5px;line-height:1.55;box-shadow:0 6px 20px rgba(0,0,0,.25);display:none;pointer-events:none}
+#bub:before{content:"";position:absolute;top:-6px;left:var(--ax,20px);border:6px solid transparent;border-top:0;border-bottom-color:#1c2430}
+.desc{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:6px;padding:8px 12px;margin-bottom:10px;color:var(--mut);font-size:12.5px}
+.tbl{overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:8px;margin-bottom:12px}
+table{border-collapse:collapse;width:100%;white-space:nowrap}
+th,td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:right}
+th{position:sticky;top:0;background:var(--card);cursor:pointer;font-size:12px;color:var(--mut);user-select:none;z-index:1}
+td:first-child,th:first-child{text-align:left}td.l,th.l{text-align:left}
+tr:hover td{background:rgba(120,140,200,.08)}
+tr.hl td{background:var(--hl)}tr.hl2 td{background:var(--hl2)}
+.up{color:var(--up)}.dn{color:var(--dn)}.mut{color:var(--mut)}
+a.nm{color:var(--ink);font-weight:700;text-decoration:none}a.nm:hover{text-decoration:underline;color:var(--acc)}
+.ql{font-size:10.5px;margin-left:4px;color:var(--mut);text-decoration:none;border:1px solid var(--line);border-radius:4px;padding:0 3px}.ql:hover{color:var(--acc);border-color:var(--acc)}
+.sec{display:block;font-size:10.5px;color:var(--mut);font-weight:400}
+.dots span{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:2px;background:var(--line)}
+.dots .b{background:var(--ok)}.dots .f{background:#f79009}.dots .i{background:#7a5af8}.dots .s{background:var(--up)}
+.score{display:inline-block;min-width:34px;padding:1px 6px;border-radius:10px;background:var(--acc);color:#fff;text-align:center;font-weight:700}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px}
+.btn:hover{border-color:var(--acc)}.btn.p{background:var(--acc);color:#fff;border-color:var(--acc)}
+.foot{color:var(--mut);font-size:12px;margin:16px 0 30px;line-height:1.7}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}
+.warn{background:#fff4e5;color:#7a4a00;border:1px solid #f5d199;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:12.5px}
+@media(prefers-color-scheme:dark){.warn{background:#3a2a10;color:#ffd699;border-color:#6b4a14}}
+.bar{position:relative}.bar>i{position:absolute;top:3px;bottom:3px;right:0;opacity:.16;border-radius:2px}.bar>b{position:relative;font-weight:400}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.panel h3{margin:0 0 8px;font-size:13px}.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.chip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:2px 4px 2px 10px;font-size:12.5px;background:var(--bg)}
+.chip button{border:0;background:none;color:var(--mut);cursor:pointer;font-size:13px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}.seg button{border:0;background:var(--card);color:var(--ink);padding:4px 10px;cursor:pointer;font-size:12px}.seg button.on{background:var(--acc);color:#fff}
+.tag{display:inline-block;font-size:11px;border-radius:4px;padding:0 5px;border:1px solid var(--line)}
+.tag.g{color:var(--ok);border-color:var(--ok)}.tag.r{color:var(--up);border-color:var(--up)}.tag.y{color:#b54708;border-color:#f79009}
+textarea{width:100%;min-height:70px}
+.cards{display:grid;gap:8px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.card .ch{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.card .kv{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin-top:6px;font-size:13px}
+.card .kv span{display:flex;justify-content:space-between;color:var(--mut)}.card .kv b{font-weight:600}
+.card .dots{margin-top:6px}
+.mOnly{display:none}.stale{background:#fdecea;color:#912018;border:1px solid #f4b8b2;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:12.5px}
+@media(max-width:720px){
+ .wrap{padding:10px 10px}header{padding:12px 12px}h1{font-size:16px}
+ .tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}.tab{flex:0 0 auto}
+ .filters{gap:8px 10px}.filters input{width:64px}.mOnly{display:inline-block}.filters .fin{display:none!important}.filters.open .fin{display:contents!important}#cp{display:none!important}
+ .grid2{grid-template-columns:1fr}
+ th,td{padding:5px 6px;font-size:12.5px}
+}
+</style></head><body>
+<header><h1 id="ttl">전일 수급 분석</h1><div class="sub" id="sub"></div></header>
+<div class="wrap">
+<div id="warn"></div>
+<div class="filters" id="filters"></div>
+<div class="tabs" id="tabs"></div>
+<div class="desc" id="desc"></div>
+<div id="main"></div>
+<div class="foot" id="foot"></div>
+</div>
+<div id="bub"></div>
+<script>
+let DATA=/*__DATA__*/null;
+const SERVED=/*__SERVED__*/false;
+const $=s=>document.querySelector(s);
+const fmt=(v,d=0)=>v==null||isNaN(v)?'-':v.toLocaleString('ko-KR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const cls=v=>v>0?'up':v<0?'dn':'mut';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+(async()=>{
+ if(!DATA){try{const r=await fetch('data/latest.json',{cache:'no-cache'});if(!r.ok)throw 0;DATA=await r.json()}catch(e){}}
+ if(!DATA){document.body.innerHTML='<p style="padding:20px;line-height:1.7">데이터를 불러오지 못했습니다.<br>인터넷 연결을 확인하거나, 노트북에서 [KRX 수급분석]을 한 번 실행했는지 확인하세요.</p>';return}
+ if('serviceWorker' in navigator&&!SERVED&&location.protocol.indexOf('http')==0){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+ main();
+})();
+function main(){
+const D=DATA,n=D.days.length,L=n-1,Z=Array(n).fill(0),S=a=>a.reduce((x,y)=>x+y,0);
+const dd=s=>s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6);
+const SEC=D.sec||{},OV=D.ov||{};
+$('#ttl').textContent=dd(D.days[L])+' 수급 분석';
+$('#sub').textContent=`기준일 ${dd(D.days[L])} · 5거래일 ${dd(D.days[0])}~${dd(D.days[L])} · 코스피+코스닥 · 단위 억원 · 생성 ${D.generated}`;
+const isM=()=>matchMedia('(max-width:720px)').matches;
+const ageD=(Date.now()-new Date(String(D.generated).replace(' ','T')).getTime())/864e5;
+const staleH=(!SERVED&&D.generated&&ageD>2.5)?`<div class="stale">데이터가 ${Math.floor(ageD)}일 전(${D.generated}) 것입니다. 노트북에서 [KRX 수급분석]을 실행하면 갱신됩니다.</div>`:'';
+const hasPx=D.px&&Object.keys(D.px).length>0,hasSec=Object.keys(SEC).length>0,hasOv=Object.keys(OV).length>0;
+$('#warn').innerHTML=staleH+(hasPx?'':'<div class="warn">시세(등락률·거래대금·시총) 조회에 실패해 해당 필터·강도 지표는 적용되지 않았습니다.</div>')+(hasSec?'':'<div class="warn">업종 정보 조회에 실패해 업종 표기와 업종별 수급은 생략했습니다.</div>')+(hasOv?'':'<div class="warn">시간외 단일가 등락률을 가져오지 못했습니다(해당 열은 "-"). 수급 데이터에는 영향 없습니다.</div>');
+const all=new Set([...Object.keys(D.names),...Object.keys(D.F),...Object.keys(D.I)]);
+const rows=[...all].map(c=>{
+ const f=(D.F[c]||Z).map(v=>v/100),i=(D.I[c]||Z).map(v=>v/100),p=(D.P[c]||Z).map(v=>v/100),r=(D.R[c]||Z).map(v=>v/100);
+ const px=(D.px||{})[c]||{};const tv=px.tv!=null?px.tv/100:null,mc=px.mc!=null?px.mc/100:null;
+ const day=f.map((x,k)=>x>0&&i[k]>0?'b':x>0?'f':i[k]>0?'i':(x<0&&i[k]<0)?'s':'n');
+ let streak=0;for(let k=L;k>=0&&day[k]=='b';k--)streak++;
+ const ov=OV[c]?OV[c].r:null;
+ return{c,name:D.names[c]||c,sec:SEC[c]||'',mkt:px.mkt||'',close:px.close,chg:px.chg,ov,tv,mc,f,i,p,r,fD:f[L],iD:i[L],pD:p[L],rD:r[L],fS:S(f),iS:S(i),pS:S(p),rS:S(r),day,streak,both:day.filter(x=>x=='b').length,
+  str:tv?((f[L]+i[L])/tv*100):null,mcr:mc?((f[L]+i[L])/mc*100):null}});
+const byC=Object.fromEntries(rows.map(x=>[x.c,x]));
+function score(x){let s=40*x.both/n;if(x.str!=null&&x.fD>0&&x.iD>0)s+=30*Math.min(1,x.str/10);if(x.streak>=3)s+=10;if(x.pD>0)s+=10;if(x.rD<0&&x.fD>0&&x.iD>0)s+=10;if(x.chg!=null){if(x.chg>=20)s-=20;else if(x.chg>=10)s-=10}return Math.max(0,Math.round(s))}
+rows.forEach(x=>x.score=score(x));
+const links=x=>`<a class="nm" href="https://finance.naver.com/item/main.naver?code=${x.c}" target="_blank" rel="noopener" title="네이버 증권 열기">${esc(x.name)}</a><a class="ql" href="https://finance.naver.com/item/fchart.naver?code=${x.c}" target="_blank" rel="noopener" title="네이버 차트">차트</a><a class="ql" href="https://www.tossinvest.com/stocks/A${x.c}" target="_blank" rel="noopener" title="토스증권 열기">토스</a>`;
+const nameCell=x=>`${links(x)}${x.sec?`<span class="sec">${esc(x.sec)}</span>`:''}`;
+const ovCell=x=>x.ov==null?'<span class="mut">-</span>':`<span class="${cls(x.ov)}">${fmt(x.ov,2)}</span>${x.ov<=-3?' <span class="tag r" title="시간외에서 3% 이상 하락">갭하락 주의</span>':''}`;
+// ---- filters
+const FL=[['minMc','시총 ≥(억)',1000],['minTv','거래대금 ≥(억)',50],['minNet','당일 순매수 ≥(억)',1],['maxChg','등락률 ≤(%)',15],['minDays','5일 동시매수 ≥(일)',3]];
+const st={};try{Object.assign(st,JSON.parse(localStorage.getItem('krxflt')||'{}'))}catch(e){}
+$('#filters').innerHTML='<span class="fin" style="display:contents">'+FL.map(([k,l,v])=>`<label>${l}<input id="f_${k}" type="number" value="${st[k]??v}"></label>`).join('')+'<button class="btn" id="rst">초기화</button></span><button class="btn" id="cp">표 복사(TSV)</button><button class="btn mOnly" id="ftg">필터 열기 ▾</button><span id="fnote"></span>';
+const fv=k=>{const e=+$('#f_'+k).value;return isNaN(e)?0:e};
+const pass=x=>{if(hasPx){if(x.mc!=null&&x.mc<fv('minMc'))return false;if(x.tv!=null&&x.tv<fv('minTv'))return false;if(x.chg!=null&&x.chg>fv('maxChg'))return false}return true};
+const prevFI=x=>S(x.f.slice(0,L))+S(x.i.slice(0,L));
+// ---- holdings state
+let HOLD=[];const parseLine=l=>{l=String(l).trim();if(!l||l[0]=='#')return null;const m=l.split(/\t|\s{2,}/);return m[0].trim()};
+let holdMsg='';
+const loadH=async()=>{
+ let src=null;
+ if(SERVED){try{const r=await fetch('/api/holdings');if(r.ok){src=await r.json();holdMsg='보유종목.txt에 저장됩니다.'}}catch(e){}}
+ if(!src){try{const t=localStorage.getItem('krxhold');if(t){src=JSON.parse(t);holdMsg='이 브라우저에만 저장됩니다(앱 바로가기로 연 리포트에서는 보유종목.txt에 저장).'}}catch(e){}}
+ if(!src){src=D.holdings||[];holdMsg=holdMsg||'읽기 전용(앱 바로가기로 연 리포트에서 편집·저장 가능).'}
+ HOLD=src.map(parseLine).filter(Boolean)};
+const resolve=t=>byC[t]||rows.find(x=>x.name===t)||rows.find(x=>x.name.includes(t));
+const saveH=async()=>{const lines=HOLD.map(t=>{const x=resolve(t);return x?x.c+'\t'+x.name:t});
+ if(SERVED){try{await fetch('/api/holdings',{method:'POST',headers:{'X-KRX':'1','Content-Type':'application/json'},body:JSON.stringify(lines)});holdMsg='보유종목.txt에 저장됨';return}catch(e){}}
+ try{localStorage.setItem('krxhold',JSON.stringify(lines));holdMsg='이 브라우저에 저장됨'}catch(e){holdMsg='저장 실패'}};
+const addH=async cs=>{let a=0;cs.forEach(c=>{if(!HOLD.includes(c)){HOLD.push(c);a++}});await saveH();return a};
+// ---- tabs
+const TABS=[
+ {id:'sum',name:'시장 요약',tip:'시장 전체의 투자자별 5일 순매수 흐름, 업종별 자금 이동, 외국인·기관 순매수/순매도 TOP10을 한 화면에 봅니다. 금액순 외에 거래대금·시총 대비 비중순으로도 정렬해 대형주 쏠림을 걸러낼 수 있습니다. 전체 종목 기준이라 상단 필터는 적용되지 않습니다.'},
+ {id:'t1',name:'전일 쌍끌이',tip:'어제 외국인과 기관합계가 같은 날 모두 순매수한 종목입니다. 가장 기본적인 수급 후보 목록이며 점수 높은 순으로 정렬됩니다.',d:()=>`<b>검색식</b> 기준일 외국인 순매수 ≥ ${fv('minNet')}억 <b>AND</b> 기관합계 순매수 ≥ ${fv('minNet')}억 <b>AND</b> 시총·거래대금·등락률 필터 통과. 점수순.`,p:x=>x.fD>=fv('minNet')&&x.iD>=fv('minNet')&&pass(x),sort:'score'},
+ {id:'t2',name:'5일 누적 쌍끌이',tip:'5거래일 누적으로 외국인·기관이 모두 순매수이고, 같은 날 함께 산 날이 설정한 일수 이상인 종목입니다. 하루짜리 우연이 아니라 꾸준한 동반 매수를 찾습니다.',d:()=>`<b>검색식</b> 5일 누적 외국인>0 <b>AND</b> 5일 누적 기관>0 <b>AND</b> 같은 날 함께 순매수한 날 ≥ ${fv('minDays')}일. 점수순.`,p:x=>x.fS>0&&x.iS>0&&x.both>=fv('minDays')&&pass(x),sort:'score'},
+ {id:'t3',name:'수급 전환',tip:'직전 4일은 외국인+기관이 순매도였는데 어제 둘이 동시에 순매수로 돌아선 종목입니다. 매도세가 끝나고 매수세가 들어오는 초기 신호를 찾습니다. 강도(거래대금 대비) 순.',d:()=>`<b>검색식</b> 직전 4일 외국인+기관 누적 순매도(<0) <b>AND</b> 기준일 외국인·기관 동시 순매수. 매도세에서 매수세로 바뀐 종목.`,p:x=>prevFI(x)<0&&x.fD>=fv('minNet')&&x.iD>=fv('minNet')&&pass(x),sort:'str'},
+ {id:'t4',name:'연기금 동반',tip:'어제 연기금과 외국인이 함께 순매수한 종목입니다. 연기금은 기관합계에 포함된 하위 항목으로, 비교적 장기 성향의 자금이 같이 들어왔는지 확인합니다.',d:()=>`<b>검색식</b> 기준일 연기금 순매수 ≥ ${fv('minNet')}억 <b>AND</b> 외국인 순매수 ≥ ${fv('minNet')}억.`,p:x=>x.pD>=fv('minNet')&&x.fD>=fv('minNet')&&pass(x),sort:'score'},
+ {id:'t5',name:'쌍끌이 매도(경고)',tip:'어제 외국인·기관이 동시에 순매도하고 개인이 받아준 종목입니다. 보유 종목 점검과 매수 회피 목록으로 씁니다. 순매도 합계가 큰 순입니다.',d:()=>`<b>검색식</b> 기준일 외국인·기관 동시 순매도 <b>AND</b> 개인 순매수. 순매도 합계가 큰 순(시총·거래대금 필터만 적용).`,p:x=>x.fD<=-fv('minNet')&&x.iD<=-fv('minNet')&&x.rD>0&&pass({...x,chg:null}),sort:'sell'},
+ {id:'hold',name:'내 보유종목',tip:'내가 담아둔 종목의 외국인·기관 5일 일별 수급과 판정(쌍끌이 매수/매도 등)을 보여줍니다. 종목 검색으로 추가하거나, 토스증권·카카오페이증권 화면 텍스트를 붙여넣어 가져올 수 있습니다. 상단 필터는 적용되지 않습니다.',d:()=>'보유종목은 상단 필터와 무관하게 모두 표시됩니다. 종목 검색으로 추가하거나 증권앱 화면 텍스트를 붙여넣어 가져오세요.',p:x=>false,hold:true}
+];
+let cur='t1',sk=null,sd=-1,topMode='amt';
+// bubble
+const bub=$('#bub');let bt=null;
+const showBub=(el,txt,keep)=>{bub.textContent=txt;bub.style.display='block';const r=el.getBoundingClientRect();let left=Math.min(r.left,innerWidth-bub.offsetWidth-10);bub.style.left=Math.max(8,left)+'px';bub.style.top=(r.bottom+10)+'px';bub.style.setProperty('--ax',Math.max(10,r.left+r.width/2-left-6)+'px');clearTimeout(bt);if(keep)bt=setTimeout(()=>bub.style.display='none',6000)};
+const hideBub=()=>{clearTimeout(bt);bub.style.display='none'};
+function render(){
+ hideBub();
+ const T=TABS.find(t=>t.id==cur);
+ const off=cur=='sum'||cur=='hold';
+ $('#filters').classList.toggle('off',off);
+ $('#fnote').textContent=off?(cur=='sum'?'이 탭은 전체 종목 기준이라 필터가 적용되지 않습니다.':'이 탭은 보유종목 전체를 표시해 필터가 적용되지 않습니다.'):'';
+ $('#tabs').innerHTML=TABS.map(t=>{const cnt=t.p&&!t.hold?rows.filter(t.p).length:(t.hold?HOLD.length:'');return`<button class="tab ${t.id==cur?'on':''}" data-t="${t.id}">${t.name}${cnt!==''?`<small>${cnt}</small>`:''}</button>`}).join('');
+ document.querySelectorAll('.tab').forEach(b=>{const t=TABS.find(x=>x.id==b.dataset.t);
+  b.onmouseenter=()=>showBub(b,t.tip,false);b.onmouseleave=hideBub;
+  b.onclick=()=>{cur=t.id;sk=null;render();const nb=document.querySelector(`.tab[data-t="${t.id}"]`);showBub(nb,t.tip,true)}});
+ $('#desc').innerHTML=T.d?T.d():'5거래일 시장 전체 투자자별 순매수와 업종·종목 TOP10. 전체 종목 기준.';
+ $('#cp').style.display=(off?'none':'');
+ if(cur=='sum')return summary();
+ if(cur=='hold')return holdings();
+ listTab(T);
+}
+const COLS=[['name','종목','l'],['c','코드','l'],['mkt','시장','l'],['close','종가'],['chg','등락%'],['ov','시간외%'],['tv','거래대금'],['mc','시총'],['fD','외국인'],['iD','기관'],['pD','연기금'],['rD','개인'],['fS','외인5일'],['iS','기관5일'],['both','동시일수'],['str','거래대금비%'],['mcr','시총비%'],['score','점수'],['day','5일 흐름','l']];
+function listTab(T){
+ let list=rows.filter(T.p);
+ const def={score:(a,b)=>b.score-a.score||(b.fD+b.iD)-(a.fD+a.iD),str:(a,b)=>(b.str??-9)-(a.str??-9),sell:(a,b)=>(a.fD+a.iD)-(b.fD+b.iD)}[T.sort];
+ list.sort(sk?((a,b)=>{const x=a[sk],y=b[sk];return((x??-1e18)>(y??-1e18)?1:(x??-1e18)<(y??-1e18)?-1:0)*sd}):def);
+ if(isM()){
+  const SK=[['','기본(점수)'],['str','거래대금비%'],['mcr','시총비%'],['fD','외국인'],['iD','기관'],['chg','등락%']];
+  const ms=sk||'';
+  const cards=list.slice(0,100).map(x=>`<div class="card"><div class="ch"><div>${nameCell(x)}</div><span class="score">${x.score}</span></div><div class="kv"><span>외국인<b class="${cls(x.fD)}">${fmt(x.fD)}</b></span><span>기관<b class="${cls(x.iD)}">${fmt(x.iD)}</b></span><span>연기금<b class="${cls(x.pD)}">${fmt(x.pD)}</b></span><span>개인<b class="${cls(x.rD)}">${fmt(x.rD)}</b></span><span>등락%<b class="${cls(x.chg)}">${x.chg==null?'-':fmt(x.chg,2)}</b></span><span>시간외%<b>${ovCell(x)}</b></span><span>거래대금비%<b>${x.str==null?'-':fmt(x.str,1)}</b></span><span>동시매수<b>${x.both}/${n}</b></span></div><div class="dots">${x.day.map((d,j)=>`<span class="${d=='n'?'':d}"></span>`).join('')}</div></div>`).join('');
+  $('#main').innerHTML=`<div class="row"><label class="mut" style="font-size:12px">정렬 <select id="msort">${SK.map(([k,l])=>`<option value="${k}" ${ms==k?'selected':''}>${l}</option>`).join('')}</select></label><span class="mut" style="font-size:12px">${list.length}종목</span></div><div class="cards">${cards||'<div class="card mut" style="text-align:center">조건에 맞는 종목이 없습니다. 필터를 완화해 보세요.</div>'}</div>`;
+  $('#msort').onchange=e=>{sk=e.target.value||null;sd=-1;render()};
+  return}
+ const head='<tr>'+COLS.map(([k,l,a])=>`<th class="${a||''}" data-k="${k}">${l}${sk==k?(sd>0?' ▲':' ▼'):''}</th>`).join('')+'</tr>';
+ const body=list.slice(0,300).map(x=>'<tr>'+COLS.map(([k,l,a])=>{
+  const v=x[k];let h;
+  if(k=='name')h=nameCell(x);else if(k=='c'||k=='mkt')h=`<span class="mut">${v}</span>`;
+  else if(k=='close'||k=='tv'||k=='mc')h=fmt(v);else if(k=='chg')h=v==null?'-':`<span class="${cls(v)}">${fmt(v,2)}</span>`;
+  else if(k=='ov')h=ovCell(x);else if(k=='str'||k=='mcr')h=v==null?'-':fmt(v,k=='mcr'?3:1);
+  else if(k=='score')h=`<span class="score">${v}</span>`;else if(k=='both')h=v+'/'+n;
+  else if(k=='day')h='<span class="dots">'+x.day.map((d,j)=>`<span class="${d=='n'?'':d}" title="${dd(D.days[j])} 외${fmt(x.f[j])} 기${fmt(x.i[j])}"></span>`).join('')+'</span>';
+  else h=`<span class="${cls(v)}">${fmt(v)}</span>`;
+  return`<td class="${a||''}">${h}</td>`}).join('')+'</tr>').join('');
+ $('#main').innerHTML=`<div class="tbl"><table id="tb">${head}${body||`<tr><td colspan="${COLS.length}" class="mut" style="text-align:center;padding:30px">조건에 맞는 종목이 없습니다. 필터를 완화해 보세요.</td></tr>`}</table></div>`;
+ document.querySelectorAll('#tb th').forEach(h=>h.onclick=()=>{const k=h.dataset.k;if(k=='day')return;sd=(sk==k)?-sd:-1;sk=k;render()});
+ const cc=COLS.filter(c=>c[0]!='day');
+ $('#cp').onclick=()=>{const t=[cc.map(c=>c[1]).join('\t')].concat(list.map(x=>cc.map(([k])=>{const v=x[k];return v==null?'':typeof v=='number'?Math.round(v*1000)/1000:v}).join('\t'))).join('\n');navigator.clipboard.writeText(t).then(()=>{$('#cp').textContent='복사됨';setTimeout(()=>$('#cp').textContent='표 복사(TSV)',1500)})};
+}
+// ---- summary
+const spark=(a,w=64,h=22)=>{const m=Math.max(1,...a.map(Math.abs));const bw=w/a.length;return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><line x1="0" x2="${w}" y1="${h/2}" y2="${h/2}" stroke="currentColor" opacity=".2"/>`+a.map((v,k)=>{const bh=Math.abs(v)/m*(h/2-1);return`<rect x="${k*bw+1.5}" y="${v>=0?h/2-bh:h/2}" width="${bw-3}" height="${Math.max(bh,.5)}" fill="${v>=0?'var(--up)':'var(--dn)'}"/>`}).join('')+'</svg>'};
+function summary(){
+ const tot=k=>D.days.map((_,j)=>Math.round(rows.reduce((a,x)=>a+x[k][j],0)));
+ const inv=[['외국인','f'],['기관합계','i'],['연기금(기관 포함)','p'],['개인','r']].map(([nm,k])=>[nm,tot(k)]);
+ const invT=inv.map(([nm,a])=>{const m=Math.max(1,...a.map(Math.abs));return`<tr><td>${nm}</td>`+a.map(v=>`<td class="bar"><i style="width:${Math.abs(v)/m*100}%;background:${v>=0?'var(--up)':'var(--dn)'}"></i><b class="${cls(v)}">${fmt(v)}</b></td>`).join('')+`<td class="${cls(S(a))}"><b>${fmt(S(a))}</b></td><td style="color:var(--ink)">${spark(a)}</td></tr>`}).join('');
+ let secH='';
+ if(hasSec){const m={};rows.forEach(x=>{if(!x.sec)return;const o=m[x.sec]||(m[x.sec]={f:0,i:0,f5:0,i5:0,n:0});o.f+=x.fD;o.i+=x.iD;o.f5+=x.fS;o.i5+=x.iS});
+  const arr=Object.entries(m).map(([k,o])=>({k,...o,t:o.f+o.i,t5:o.f5+o.i5})).sort((a,b)=>b.t-a.t);
+  const mk=(list,t)=>`<div class="tbl"><table><tr><th class="l" colspan="5" style="cursor:default">${t}</th></tr><tr><th class="l" style="cursor:default">업종</th><th style="cursor:default">외국인</th><th style="cursor:default">기관</th><th style="cursor:default">합계</th><th style="cursor:default">5일합계</th></tr>${list.map(o=>`<tr><td>${esc(o.k)}</td><td class="${cls(o.f)}">${fmt(o.f)}</td><td class="${cls(o.i)}">${fmt(o.i)}</td><td class="${cls(o.t)}"><b>${fmt(o.t)}</b></td><td class="${cls(o.t5)}">${fmt(o.t5)}</td></tr>`).join('')}</table></div>`;
+  secH=`<h3 style="margin:14px 0 6px;font-size:14px">업종별 외국인+기관 순매수(기준일, 억원) <span class="mut" style="font-weight:400;font-size:12px">KRX 업종 분류 기준(테마 분류 아님)</span></h3><div class="grid2">${mk(arr.slice(0,8),'자금 유입 상위 업종')}${mk(arr.slice(-8).reverse(),'자금 유출 상위 업종')}</div>`}
+ const modes=[['amt','순매수 금액'],['tvr','거래대금 대비 %'],['mcr','시총 대비 %']];
+ const base=topMode=='amt'?rows:rows.filter(x=>x.tv!=null&&x.mc!=null&&x.tv>=50&&x.mc>=1000);
+ const val=(x,k)=>topMode=='amt'?x[k]:topMode=='tvr'?(x.tv?x[k]/x.tv*100:0):(x.mc?x[k]/x.mc*100:0);
+ const topL=(k,sg)=>base.slice().filter(x=>sg*x[k]>0).sort((a,b)=>sg*(val(b,k)-val(a,k))).slice(0,10);
+ const L1=topL('fD',1),L2=topL('iD',1),L3=topL('fD',-1),L4=topL('iD',-1);
+ const setOf=l=>new Set(l.map(x=>x.c));const sb=[setOf(L1),setOf(L2)],ss=[setOf(L3),setOf(L4)];
+ const unit=topMode=='amt'?'억':'%',dg=topMode=='mcr'?3:topMode=='tvr'?1:0;
+ const tt=(t,list,k,buy,idx)=>`<div class="tbl"><table><tr><th class="l" colspan="4" style="cursor:default">${t}</th></tr><tr><th class="l" style="cursor:default">종목</th><th style="cursor:default">${topMode=='amt'?'순매수(억)':'비중('+unit+')'}</th><th style="cursor:default">금액(억)</th><th style="cursor:default">등락%</th></tr>${list.map(x=>{const both=buy?(sb[0].has(x.c)&&sb[1].has(x.c)):(ss[0].has(x.c)&&ss[1].has(x.c));return`<tr class="${both?(buy?'hl':'hl2'):''}"><td>${both?(buy?'💡 ':'⚠ '):''}${nameCell(x)}</td><td class="${cls(val(x,k))}">${fmt(val(x,k),dg)}</td><td class="${cls(x[k])}">${fmt(x[k])}</td><td>${x.chg==null?'-':`<span class="${cls(x.chg)}">${fmt(x.chg,2)}</span>`}</td></tr>`}).join('')||'<tr><td colspan="4" class="mut">해당 없음</td></tr>'}</table></div>`;
+ $('#main').innerHTML=`<div class="tbl"><table><tr><th class="l" style="cursor:default">투자자 (억원)</th>${D.days.map(d=>`<th style="cursor:default">${d.slice(4,6)}/${d.slice(6)}</th>`).join('')}<th style="cursor:default">5일 합계</th><th style="cursor:default">추세</th></tr>${invT}</table></div>${secH}
+ <div class="row" style="margin-top:14px"><b style="font-size:14px">순매수·순매도 TOP10</b><span class="seg">${modes.map(([k,l])=>`<button data-m="${k}" class="${topMode==k?'on':''}">${l}</button>`).join('')}</span><span class="mut" style="font-size:12px">${topMode=='amt'?'금액순은 대형주가 상위에 고정되기 쉽습니다. 비중순으로 바꿔 보세요.':'비중순은 시총 1,000억·거래대금 50억 이상 종목만 대상입니다.'} 💡=외국인·기관 양쪽 매수 TOP10 동시 등장, ⚠=양쪽 매도 TOP10 동시 등장</span></div>
+ <div class="grid2">${tt('외국인 순매수 TOP10',L1,'fD',true)}${tt('기관 순매수 TOP10',L2,'iD',true)}${tt('외국인 순매도 TOP10',L3,'fD',false)}${tt('기관 순매도 TOP10',L4,'iD',false)}</div>`;
+ document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{topMode=b.dataset.m;render()});
+}
+// ---- holdings
+function verdict(x){if(x.fD>0&&x.iD>0)return['쌍끌이 매수','g'];if(x.fD<0&&x.iD<0)return['쌍끌이 매도','r'];if(x.fD>0&&x.iD<0)return['외국인 매수·기관 매도','y'];if(x.fD<0&&x.iD>0)return['기관 매수·외국인 매도','y'];return['수급 없음','']}
+function holdings(){
+ const opts=rows.filter(x=>x.name).map(x=>`<option value="${esc(x.name)} (${x.c})"></option>`).join('');
+ const hs=HOLD.map(resolve);
+ const chips=HOLD.map((t,k)=>{const x=hs[k];return`<span class="chip">${esc(x?x.name:t)}<button data-rm="${k}" title="삭제">✕</button></span>`}).join('')||'<span class="mut">아직 담은 종목이 없습니다.</span>';
+ const head=`<tr><th class="l" style="cursor:default">종목</th><th style="cursor:default">판정</th>${D.days.map(d=>`<th style="cursor:default">외 ${d.slice(4,6)}/${d.slice(6)}</th>`).join('')}<th style="cursor:default">외인5일</th>${D.days.map(d=>`<th style="cursor:default">기 ${d.slice(4,6)}/${d.slice(6)}</th>`).join('')}<th style="cursor:default">기관5일</th><th style="cursor:default">연기금</th><th style="cursor:default">개인</th><th style="cursor:default">등락%</th><th style="cursor:default">시간외%</th></tr>`;
+ const body=HOLD.map((t,k)=>{const x=hs[k];if(!x)return`<tr><td class="l">${esc(t)}</td><td colspan="17" class="mut" style="text-align:left">데이터에서 찾지 못했습니다(상장폐지/종목명 불일치).</td></tr>`;
+  const [vt,vc]=verdict(x);const c=v=>`<td class="${cls(v)}">${fmt(v)}</td>`;
+  return`<tr><td>${nameCell(x)}</td><td><span class="tag ${vc}">${vt}</span></td>${x.f.map(c).join('')}<td class="${cls(x.fS)}"><b>${fmt(x.fS)}</b></td>${x.i.map(c).join('')}<td class="${cls(x.iS)}"><b>${fmt(x.iS)}</b></td>${c(x.pD)}${c(x.rD)}<td>${x.chg==null?'-':`<span class="${cls(x.chg)}">${fmt(x.chg,2)}</span>`}</td><td>${ovCell(x)}</td></tr>`}).join('');
+ const hcards=HOLD.map((t,k)=>{const x=hs[k];if(!x)return`<div class="card mut">${esc(t)} — 데이터에서 찾지 못했습니다.</div>`;const[vt,vc]=verdict(x);return`<div class="card"><div class="ch"><div>${nameCell(x)}</div><span class="tag ${vc}">${vt}</span></div><div class="kv"><span>외국인 당일<b class="${cls(x.fD)}">${fmt(x.fD)}</b></span><span>기관 당일<b class="${cls(x.iD)}">${fmt(x.iD)}</b></span><span>외국인 5일<b class="${cls(x.fS)}">${fmt(x.fS)}</b></span><span>기관 5일<b class="${cls(x.iS)}">${fmt(x.iS)}</b></span><span>연기금<b class="${cls(x.pD)}">${fmt(x.pD)}</b></span><span>개인<b class="${cls(x.rD)}">${fmt(x.rD)}</b></span><span>등락%<b class="${cls(x.chg)}">${x.chg==null?'-':fmt(x.chg,2)}</b></span><span>시간외%<b>${ovCell(x)}</b></span></div><div class="mut" style="font-size:11.5px;margin-top:6px">외국인 5일: ${x.f.map(v=>`<span class="${cls(v)}">${fmt(v)}</span>`).join(' · ')}<br>기관 5일: ${x.i.map(v=>`<span class="${cls(v)}">${fmt(v)}</span>`).join(' · ')}</div></div>`}).join('');
+ const holdView=isM()?`<div class="cards">${hcards||'<div class="card mut" style="text-align:center">보유종목을 추가하면 수급이 여기에 표시됩니다.</div>'}</div>`:`<div class="tbl"><table>${head}${body||'<tr><td class="mut" style="text-align:center;padding:30px" colspan="18">보유종목을 추가하면 외국인·기관 수급이 여기에 표시됩니다.</td></tr>'}</table></div>`;
+ $('#main').innerHTML=`<div class="panel"><h3>종목 추가</h3>
+ <div class="row"><input id="hs" list="dl" placeholder="종목명 또는 코드 검색" style="width:260px"><datalist id="dl">${opts}</datalist><button class="btn p" id="ha">추가</button><span class="mut" style="font-size:12px" id="hm">${esc(holdMsg)}</span></div>
+ <details><summary style="cursor:pointer;font-size:13px">증권앱(토스증권·카카오페이증권)에서 가져오기</summary>
+ <p class="mut" style="font-size:12px;margin:6px 0">증권앱은 외부 프로그램이 계정 정보를 직접 읽도록 허용하지 않습니다. 대신 앱(또는 PC 웹)의 <b>보유 종목 화면 글자를 복사해서 아래에 붙여넣으면</b> 종목명을 찾아 목록으로 보여주고, 선택한 종목만 추가합니다.</p>
+ <textarea id="pt" placeholder="여기에 붙여넣기 (종목명이 들어 있는 텍스트)"></textarea><div class="row" style="margin-top:6px"><button class="btn" id="pp">종목 찾기</button><span id="pr"></span></div><div id="pl"></div></details>
+ <div class="row" style="margin-top:8px">${chips}</div></div>
+ ${holdView}`;
+ const doAdd=async t=>{t=t.trim();if(!t)return;let m=t.match(/\(([0-9A-Z]{6})\)\s*$/);let x=m?byC[m[1]]:(byC[t]||rows.find(r=>r.name===t));if(!x){$('#hm').textContent='일치하는 종목이 없습니다.';return}await addH([x.c]);render()};
+ $('#ha').onclick=()=>doAdd($('#hs').value);$('#hs').onkeydown=e=>{if(e.key=='Enter')doAdd($('#hs').value)};
+ document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{HOLD.splice(+b.dataset.rm,1);await saveH();render()});
+ $('#pp').onclick=()=>{const t=$('#pt').value;const found=[];const seen=new Set();
+  (t.match(/\b[0-9A-Z]{6}\b/g)||[]).forEach(c=>{if(byC[c]&&!seen.has(c)){seen.add(c);found.push(byC[c])}});
+  rows.filter(x=>x.name&&x.name.length>=2).sort((a,b)=>b.name.length-a.name.length).forEach(x=>{if(seen.has(x.c))return;const re=new RegExp('(?<![0-9A-Za-z가-힣])'+x.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![0-9A-Za-z가-힣])');if(re.test(t)){seen.add(x.c);found.push(x)}});
+  $('#pr').textContent=found.length?`${found.length}개 찾음 — 추가할 종목을 확인하세요`:'일치하는 종목을 찾지 못했습니다.';
+  $('#pl').innerHTML=found.length?`<div class="row">${found.map(x=>`<label class="chip" style="padding:2px 10px"><input type="checkbox" class="pc" value="${x.c}" ${HOLD.includes(x.c)?'':'checked'}> ${esc(x.name)} <span class="mut">${x.c}</span></label>`).join('')}</div><button class="btn p" id="pa">선택한 종목 추가</button>`:'';
+  if(found.length)$('#pa').onclick=async()=>{const cs=[...document.querySelectorAll('.pc:checked')].map(e=>e.value);const a=await addH(cs);holdMsg=`${a}개 추가됨`;render()}};
+}
+// ---- misc
+document.querySelectorAll('#filters input').forEach(e=>e.oninput=()=>{const o={};FL.forEach(([k])=>o[k]=+$('#f_'+k).value);try{localStorage.setItem('krxflt',JSON.stringify(o))}catch(e){}render()});
+$('#ftg').onclick=()=>{const f=$('#filters');f.classList.toggle('open');$('#ftg').textContent=f.classList.contains('open')?'필터 접기 ▴':'필터 열기 ▾'};
+$('#rst').onclick=()=>{FL.forEach(([k,l,v])=>$('#f_'+k).value=v);try{localStorage.removeItem('krxflt')}catch(e){}render()};
+$('#foot').innerHTML=`<b>점수(0~100) 산식</b> = 5일 중 외국인·기관 동시 순매수 일수 비중 ×40 + 기준일 순매수강도(=(외국인+기관)÷거래대금, 10%에서 만점)×30 + 최근 3일 연속 동시매수 +10 + 연기금 순매수 +10 + 개인 순매도(역행) +10 − 과열 페널티(당일 +10% 이상 −10, +20% 이상 −20). 시간외 등락률은 점수에 넣지 않고 '갭하락 주의'(−3% 이하) 표시만 합니다.<br>
+<b>읽는 법</b> ① 동시 순매수는 수급 사실일 뿐 주가 방향을 말해주지 않습니다. ② 점수는 점검 순서를 정하는 휴리스틱이며 과거 성과로 검증되지 않았습니다. ③ 거래대금이 작은 종목은 한두 건의 주문으로 쉽게 조건을 채우니 시총·거래대금 필터를 유지하세요. ④ 5일 흐름: <span class="dots"><span class="b"></span></span>동시매수 <span class="dots"><span class="f"></span></span>외국인만 <span class="dots"><span class="i"></span></span>기관만 <span class="dots"><span class="s"></span></span>동시매도. ⑤ 시간외 단일가는 외부 사이트 비공식 조회라 일부 종목만, 또는 전혀 표시되지 않을 수 있습니다(후보 종목·보유종목만 조회).<br>
+데이터: KRX 정보데이터시스템 투자자별 순매수상위종목(기관합계=금융투자·보험·투신·사모·은행·기타금융·연기금 등), 업종은 KRX 업종 분류. 1차 공시자료가 아닌 수급 통계이므로 투자 판단 근거가 아니라 스크리닝 후보로만 사용하세요. 후보는 공시(분기보고서·주요사항보고서)로 확인한 뒤 판단하세요.`;
+if(SERVED){setInterval(()=>{fetch('/api/ping',{headers:{'X-KRX':'1'}}).catch(()=>{})},20000);fetch('/api/ping',{headers:{'X-KRX':'1'}}).catch(()=>{})}
+let wasM=isM();addEventListener('resize',()=>{if(isM()!==wasM){wasM=isM();render()}});
+loadH().then(()=>render());
+}
+</script></body></html>
